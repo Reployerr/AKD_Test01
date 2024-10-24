@@ -5,12 +5,15 @@ using TMPro;
 public class InteractionController : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private Transform playerHandPoint;
+    [SerializeField] private Transform playerHandPoint;//точка куда будет перемещен предмет
     [SerializeField] private Camera PlayerCamera;
-    [SerializeField] private Image crossHair;
-    [SerializeField] private StashZone _stash;
-    [SerializeField] private GameObject pickupTextObject;
-    [SerializeField] private TMP_Text pickupText;
+    [SerializeField] private Image crossHair;//прицел
+    [SerializeField] private StashZone _stash;//зона выгрущки предметов
+    [SerializeField] private GameObject pickupTextObject;//объект текста взаимодействий
+    [SerializeField] private TMP_Text pickupText;//текст взаимодействий
+
+    [Header("Attributes")]
+    [SerializeField] private float interactionLength = 2f;
 
     private GameObject pickedItem;
     private bool isItItem = false;
@@ -26,7 +29,7 @@ public class InteractionController : MonoBehaviour
         Ray ray = PlayerCamera.ScreenPointToRay(screenCenter);
         RaycastHit hit;
 
-        if (Physics.Raycast(ray, out hit, 2f))
+        if (Physics.Raycast(ray, out hit, interactionLength))
         {
             if (hit.collider.CompareTag("Item") && !_stash.stashedItems.Contains(hit.transform))
             {
@@ -64,7 +67,7 @@ public class InteractionController : MonoBehaviour
         {
             if (hit.collider != null)
             {
-                // Проверяем, взаимодействуем ли с предметом или с дверью
+                // варианты взаимодействий
                 if (hit.collider.CompareTag("Item"))
                 {
                     HandlePickup(hit);
@@ -78,6 +81,10 @@ public class InteractionController : MonoBehaviour
                     HandleStashing();
                 }
 
+                else if(hit.collider.CompareTag("Other") && pickedItem != null)
+				{
+                    DropItem();
+                }
             }
 
 			else
@@ -96,7 +103,8 @@ public class InteractionController : MonoBehaviour
         }
     }
 
-    private void HandlePickup(RaycastHit hit)
+	#region Handles
+	private void HandlePickup(RaycastHit hit)
     {
         if (pickedItem == null && !_stash.stashedItems.Contains(hit.transform))
         {
@@ -109,9 +117,13 @@ public class InteractionController : MonoBehaviour
 
             Debug.Log("Предмет подобран: " + hit.collider.name);
         }
-        else
+        else if(pickedItem != null)
         {
-            Debug.Log(hit.collider.name + " уже находится в грузовике, взять нельзя.");
+            Debug.Log("рука занята");
+        }
+		else
+		{
+            Debug.Log(hit.collider.name + " уже сложено");
         }
     }
 
@@ -125,7 +137,7 @@ public class InteractionController : MonoBehaviour
         pickedItem.transform.SetParent(null);
         pickedItem = null;
 
-        Debug.Log("Предмет положен в грузовик.");
+        Debug.Log("Предмет сложен в грузовик.");
     }
 
     private void HandleDoor(RaycastHit hit)
@@ -136,8 +148,9 @@ public class InteractionController : MonoBehaviour
             door.OpenClose();
         }
     }
+	#endregion
 
-    private void DropItem()
+	private void DropItem()
 	{
         pickedItem.GetComponent<Rigidbody>().isKinematic = false;
         pickedItem.transform.SetParent(null);
